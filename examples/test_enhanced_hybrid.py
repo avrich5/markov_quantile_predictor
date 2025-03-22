@@ -38,19 +38,32 @@ def main():
         volumes = None
     
     # Создаем конфигурацию предиктора
+    # config = PredictorConfig(
+    #     window_size=750,
+    #     prediction_depth=15,
+    #     min_confidence=0.80,
+    #     state_length=4,
+    #     significant_change_pct=0.4,
+    #     use_weighted_window=False,
+    #     quantiles=(0.1, 0.5, 0.9),
+    #     min_samples_for_regression=10,
+    #     confidence_threshold=0.75,
+    #     max_coverage=0.05
+    # )
+
     config = PredictorConfig(
         window_size=750,
         prediction_depth=15,
-        min_confidence=0.80,
+        min_confidence=0.6,  # Временно снижено с 0.8
         state_length=4,
         significant_change_pct=0.4,
         use_weighted_window=False,
         quantiles=(0.1, 0.5, 0.9),
-        min_samples_for_regression=10,
-        confidence_threshold=0.75,
+        min_samples_for_regression=10, 
+        confidence_threshold=0.5,  # Временно снижено с 0.75
         max_coverage=0.05
     )
-    
+
     print("Конфигурация гибридного предиктора:")
     print(config)
     
@@ -72,8 +85,10 @@ def main():
     hybrid_predictor.visualize_results(prices, hybrid_results, hybrid_save_path)
     
     # Генерируем отчет
+
+    # Генерируем отчет
     hybrid_report_path = f"reports/enhanced_hybrid_report_{timestamp}.md"
-    hybrid_predictor.generate_report(hybrid_results, hybrid_report_path)
+    hybrid_predictor.generate_report(hybrid_results, hybrid_report_path, prices)  # Передаем массив цен    
     print(f"Отчет гибридной модели сохранен в {hybrid_report_path}")
     
     print("\nАнализ завершен.")

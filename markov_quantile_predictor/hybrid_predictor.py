@@ -136,97 +136,7 @@ class MarkovQuantilePredictor(MarkovPredictor):
         current_features = self._extract_features(prices, idx)
         
         return np.array(X), np.array(y), current_features
-    
-    def predict_at_point(self, prices, idx, max_predictions=None, current_predictions=0):
-        """
-        Делает предсказание для точки, используя сначала марковский предиктор,
-        а затем квантильную регрессию
         
-        Параметры:
-        prices (numpy.array): массив цен
-        idx (int): индекс точки
-        max_predictions (int, optional): максимальное количество предсказаний
-        current_predictions (int): текущее количество предсказаний
-        
-        Возвращает:
-        dict: результат предсказания
-        """
-        # Шаг 1: Получаем предсказание от марковского предиктора
-        markov_result = super().predict_at_point(prices, idx, max_predictions, current_predictions)
-        
-        # Если марковский предиктор не дал предсказания, возвращаем его результат
-        if markov_result['prediction'] == 0:
-            return markov_result
-        
-        # Шаг 2: Получаем данные для квантильной регрессии
-        dynamic_threshold = self._calculate_dynamic_threshold(prices, idx)
-        X, y, current_features = self._collect_state_samples(prices, idx, dynamic_threshold)
-        
-        current_state = markov_result['state']
-        
-        # Если недостаточно данных для квантильной регрессии, возвращаем предсказание марковского предиктора
-        if X is None or len(X) < self.config.min_samples_for_regression:
-            return markov_result
-        
-        # Шаг 3: Обучаем или используем модель квантильной регрессии для текущего состояния
-        if current_state not in self.quantile_models:
-            # Создаем и обучаем новую модель
-            model = QuantileRegressionModel(quantiles=self.config.quantiles, alpha=0.1)
-            model.fit(X, y)
-            self.quantile_models[current_state] = model
-        else:
-            # Используем существующую модель
-            model = self.quantile_models[current_state]
-        
-        # Шаг 4: Делаем предсказание с помощью квантильной регрессии
-        quantile_predictions = model.predict_single(current_features)
-        
-        # Если не удалось сделать предсказание, возвращаем результат марковского предиктора
-        if quantile_predictions is None:
-            return markov_result
-        
-        # Шаг 5: Интегрируем результаты обоих моделей
-        
-        # Получаем медианное предсказание (квантиль 0.5)
-        median_prediction = quantile_predictions[0.5]
-        
-        # Определяем направление движения на основе квантильной регрессии
-        quantile_direction = 0
-        if median_prediction > dynamic_threshold:
-            quantile_direction = 1  # Рост
-        elif median_prediction < -dynamic_threshold:
-            quantile_direction = 2  # Падение
-        
-        # Проверяем, согласуются ли предсказания обеих моделей
-        if quantile_direction == markov_result['prediction']:
-            # Если предсказания согласуются, увеличиваем уверенность
-            confidence = min(1.0, markov_result['confidence'] * 1.1)
-        else:
-            # Если предсказания не согласуются, снижаем уверенность
-            confidence = markov_result['confidence'] * 0.8
-            
-            # Если уверенность стала ниже порога, отменяем предсказание
-            if confidence < self.config.confidence_threshold:
-                return {
-                    'prediction': 0,
-                    'confidence': 0.0,
-                    'state': current_state,
-                    'state_occurrences': markov_result.get('state_occurrences', 0)
-                }
-        
-        # Формируем итоговый результат, добавляя информацию от квантильной регрессии
-        result = {
-            'prediction': markov_result['prediction'],
-            'confidence': confidence,
-            'state': current_state,
-            'state_occurrences': markov_result.get('state_occurrences', 0),
-            'quantile_predictions': {q: float(val) for q, val in quantile_predictions.items()},
-            'up_prob': markov_result.get('up_prob', 0),
-            'down_prob': markov_result.get('down_prob', 0)
-        }
-        
-        return result
-    
     def visualize_results(self, prices, results, save_path=None):
         """
         Визуализирует результаты предсказаний, включая информацию от квантильной регрессии
@@ -291,13 +201,14 @@ class MarkovQuantilePredictor(MarkovPredictor):
         
         plt.show()
     
-    def generate_report(self, results, save_path=None):
+    def generate_report(self, results, save_path=None, prices=None):
         """
         Генерирует отчет о результатах предсказаний, включая информацию от квантильной регрессии
         
         Параметры:
         results (list): результаты предсказаний
         save_path (str): путь для сохранения отчета
+        prices (numpy.array, optional): массив цен, используемый для анализа фактических изменений
         
         Возвращает:
         str: текст отчета
@@ -308,13 +219,13 @@ class MarkovQuantilePredictor(MarkovPredictor):
         # Собираем статистику по квантильным предсказаниям
         quantile_results = [r for r in results if 'quantile_predictions' in r]
         
-        if not quantile_results:
-            # Если нет данных от квантильной регрессии, возвращаем базовый отчет
+        if not quantile_results or prices is None:
+            # Если нет данных от квантильной регрессии или не передан массив цен
             if save_path:
                 with open(save_path, 'w', encoding='utf-8') as f:
                     f.write(base_report)
             return base_report
-        
+    
         # Анализируем результаты квантильных предсказаний
         
         # 1. Точность квантильных предсказаний
@@ -386,7 +297,14 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
     def __init__(self, config=None):
         super().__init__(config)
         self.feature_extractors = self._init_feature_extractors()
-    
+
+        # Проверьте, что базовая модель правильно инициализирована
+        self.base_quantile_model = QuantileRegressionModel(
+            quantiles=self.config.quantiles,
+            alpha=0.1
+        )
+        print(f"Initialized with quantiles: {self.config.quantiles}")
+
     def _init_feature_extractors(self):
         """Инициализирует извлекатели признаков для квантильной регрессии"""
         extractors = {
@@ -495,19 +413,6 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         return combined_features
     
     def predict_at_point(self, prices, volumes=None, idx=None, max_predictions=None, current_predictions=0):
-        """
-        Делает предсказание для точки с использованием гибридной модели
-        
-        Параметры:
-        prices (numpy.array): массив цен
-        volumes (numpy.array, optional): массив объемов торгов
-        idx (int): индекс точки
-        max_predictions (int, optional): максимальное количество предсказаний
-        current_predictions (int): текущее количество предсказаний
-        
-        Возвращает:
-        dict: результат предсказания
-        """
         # Базовые проверки (как в родительском классе)
         if idx < self.config.window_size or idx < self.config.state_length:
             return {'prediction': 0, 'confidence': 0.0}
@@ -523,6 +428,10 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         if current_state is None:
             return {'prediction': 0, 'confidence': 0.0}
         
+        # Отладочный вывод 1 раз на 1000 точек
+        if idx % 1000 == 0:
+            print(f"Debug at idx={idx}: State={current_state}, Threshold={dynamic_threshold:.6f}")
+        
         # Собираем все признаки для гибридной модели
         features = self._collect_enhanced_features(prices, volumes, idx, dynamic_threshold)
         
@@ -530,29 +439,42 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         if current_state in self.quantile_models:
             model = self.quantile_models[current_state]
             predictions = model.predict_single(features)
+            if idx % 1000 == 0:
+                print(f"  Using state model, predictions: {predictions}")
         else:
             # Если модели нет, используем базовую модель (или None)
             if self.base_quantile_model.is_fitted:
                 predictions = self.base_quantile_model.predict_single(features)
+                if idx % 1000 == 0:
+                    print(f"  Using base model, predictions: {predictions}")
             else:
+                if idx % 1000 == 0:
+                    print(f"  No models available")
                 return {'prediction': 0, 'confidence': 0.0}
         
         # Если не удалось получить предсказания, возвращаем пустой результат
         if predictions is None:
+            if idx % 1000 == 0:
+                print(f"  Predictions is None")
             return {'prediction': 0, 'confidence': 0.0}
         
+        # ... остальной код метода ...
         # Определяем направление и уверенность на основе квантилей
         median = predictions[0.5]  # медиана (50% квантиль)
         lower = predictions[0.1]   # нижний квантиль (10%)
         upper = predictions[0.9]   # верхний квантиль (90%)
-        
+
+        # Отладочная информация
+        if idx % 1000 == 0:
+            print(f"  Median: {median:.6f}, Lower: {lower:.6f}, Upper: {upper:.6f}")
+
         # Определяем направление
         prediction = 0
         if median > dynamic_threshold:
             prediction = 1  # рост
         elif median < -dynamic_threshold:
             prediction = 2  # падение
-        
+
         # Рассчитываем уверенность на основе распределения квантилей
         if prediction == 1:  # Рост
             # Уверенность тем выше, чем дальше нижний квантиль от нуля
@@ -562,23 +484,28 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
             confidence = min(1.0, max(0, -upper / dynamic_threshold + 0.5))
         else:
             confidence = 0.0
-        
-        # Применяем фильтр уверенности
+
+        # Отладочная информация о решении
+        if idx % 1000 == 0:
+            print(f"  Decision: prediction={prediction}, confidence={confidence:.4f}, threshold={self.config.confidence_threshold}")
+
+        # Применяем фильтр уверенности 
         if confidence < self.config.confidence_threshold:
             prediction = 0
             confidence = 0.0
-        
+
         # Формируем итоговый результат
         result = {
             'prediction': prediction,
             'confidence': confidence,
             'state': current_state,
-            'quantile_predictions': {q: float(val) for q, val in predictions.items()},
-            'features': features.tolist()  # для отладки
+            'quantile_predictions': {q: float(val) for q, val in predictions.items()} if predictions else {},
+            'features': features.tolist() if isinstance(features, np.ndarray) else []  # для отладки
         }
-        
+
         return result
-    
+
+        
     def run_on_data(self, prices, volumes=None, verbose=True):
         """
         Запускает гибридную модель на всем наборе данных
@@ -605,16 +532,19 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         
         # Проходим по всем точкам
         with tqdm(total=len(prices) - min_idx - self.config.prediction_depth, 
-                  desc="Processing", disable=not verbose) as pbar:
+                    desc="Processing", disable=not verbose) as pbar:
             for idx in range(min_idx, len(prices) - self.config.prediction_depth):
-                # Делаем предсказание с новой гибридной моделью
+                # Делаем предсказание
                 pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
                 prediction = pred_result['prediction']
+                
+                # Получаем состояние для этой точки и сохраняем его, даже если предсказание не делается
+                dynamic_threshold = self._calculate_dynamic_threshold(prices, idx)
+                current_state = self._get_state(prices, idx, dynamic_threshold)
                 
                 # Если предсказание не "не знаю", проверяем результат
                 if prediction != 0:
                     current_predictions += 1
-                    dynamic_threshold = self._calculate_dynamic_threshold(prices, idx)
                     actual_outcome = self._determine_outcome(prices, idx, dynamic_threshold)
                     
                     # Пропускаем проверку, если результат незначительное изменение (0)
@@ -640,12 +570,12 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                     }
                     
                     # Обновляем статистику по этому состоянию
-                    state = pred_result['state']
-                    self.state_statistics[state]['total'] += 1
-                    if is_correct:
-                        self.state_statistics[state]['correct'] += 1
+                    if current_state:  # Проверяем, что состояние определено
+                        self.state_statistics[current_state]['total'] += 1
+                        if is_correct:
+                            self.state_statistics[current_state]['correct'] += 1
                     
-                    # Сохраняем результат
+                    # Сохраняем результат с полной информацией
                     result = {
                         'index': idx,
                         'price': prices[idx],
@@ -655,7 +585,7 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                         'confidence': pred_result['confidence'],
                         'success_rate': self.success_rate,
                         'correct_total': f"{self.correct_predictions}-{self.total_predictions}",
-                        'state': pred_result['state'],
+                        'state': current_state,  # Явно включаем состояние
                         'quantile_predictions': pred_result.get('quantile_predictions', {})
                     }
                 else:
@@ -666,7 +596,7 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                         'prediction': 0,
                         'confidence': pred_result.get('confidence', 0.0),
                         'success_rate': self.success_rate if self.total_predictions > 0 else 0,
-                        'state': pred_result.get('state'),
+                        'state': current_state,  # Явно включаем состояние
                     }
                 
                 results.append(result)
@@ -682,18 +612,20 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                         'Predictions': self.total_predictions,
                         'Success Rate': f"{self.success_rate*100:.2f}%"
                     })
-        
-        return results
-    
+            
+            # Сохраняем ссылку на массив цен для использования в generate_report
+            self.prices = prices
+            
+            return results
+       
     def _update_quantile_models(self, prices, results):
-        """Обновляет модели квантильной регрессии на основе накопленных данных"""
         # Группируем результаты по состояниям
         state_data = defaultdict(lambda: {'X': [], 'y': []})
         
         for r in results:
             if 'state' not in r or r['state'] is None:
                 continue
-                
+                    
             idx = r['index']
             state = r['state']
             
@@ -714,7 +646,11 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                 state_data[state]['X'].append(features)
                 state_data[state]['y'].append(pct_change)
         
+        # Отладочный вывод
+        print(f"\nModel update: Collected samples for {len(state_data)} states")
+        
         # Обучаем модели для каждого состояния
+        models_updated = 0
         for state, data in state_data.items():
             if len(data['X']) >= self.config.min_samples_for_regression:
                 X = np.array(data['X'])
@@ -723,6 +659,9 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                 model = QuantileRegressionModel(quantiles=self.config.quantiles, alpha=0.1)
                 model.fit(X, y)
                 self.quantile_models[state] = model
+                models_updated += 1
+        
+        print(f"Updated {models_updated} state models, total models: {len(self.quantile_models)}")
         
         # Обучаем базовую модель на всех данных
         all_X = []
@@ -734,3 +673,6 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         
         if len(all_X) >= self.config.min_samples_for_regression:
             self.base_quantile_model.fit(np.array(all_X), np.array(all_y))
+            print(f"Base model fitted with {len(all_X)} samples")
+        else:
+            print(f"Not enough samples ({len(all_X)}) for base model")

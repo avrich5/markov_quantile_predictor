@@ -235,130 +235,110 @@ class MarkovPredictor:
         
         return {'up_prob': up_prob, 'down_prob': down_prob}
     
-    def predict_at_point(self, prices, idx, max_predictions=None, current_predictions=0):
+    def predict_at_point(self, prices, volumes=None, idx=None, max_predictions=None, current_predictions=0):
         """
-        Делает предсказание в точке idx, анализируя предыдущие window_size точек
+        Делает предсказание для точки с использованием гибридной модели
         
         Параметры:
         prices (numpy.array): массив цен
-        idx (int): индекс точки для предсказания
+        volumes (numpy.array, optional): массив объемов торгов
+        idx (int): индекс точки
         max_predictions (int, optional): максимальное количество предсказаний
         current_predictions (int): текущее количество предсказаний
         
         Возвращает:
         dict: результат предсказания
         """
-        # Проверяем достаточно ли данных для анализа
+        # Базовые проверки (как в родительском классе)
         if idx < self.config.window_size or idx < self.config.state_length:
-            return {'prediction': 0, 'confidence': 0.0}  # Недостаточно данных
+            return {'prediction': 0, 'confidence': 0.0}
         
-        # Проверяем, не превышено ли максимальное количество предсказаний
         if max_predictions is not None and current_predictions >= max_predictions:
             return {'prediction': 0, 'confidence': 0.0}
         
-        # Вычисляем динамический порог для определения значимого изменения
+        # Вычисляем динамический порог
         dynamic_threshold = self._calculate_dynamic_threshold(prices, idx)
         
-        # Определяем текущий паттерн движения
+        # Получаем текущее состояние
         current_state = self._get_state(prices, idx, dynamic_threshold)
         if current_state is None:
             return {'prediction': 0, 'confidence': 0.0}
         
-        # Если фокусируемся на лучших состояниях и текущее состояние не входит в список лучших,
-        # то не делаем предсказания
-        if self.config.focus_on_best_states and current_state not in self.config.best_states:
-            return {'prediction': 0, 'confidence': 0.0, 'state': current_state}
+        # Отладочный вывод 1 раз на 1000 точек
+        if idx % 1000 == 0:
+            print(f"Debug at idx={idx}: State={current_state}, Threshold={dynamic_threshold:.6f}")
         
-        # Определяем окно для анализа
-        start_idx = max(self.config.state_length, idx - self.config.window_size)
-        window = prices[start_idx:idx+1]
+        # Собираем все признаки для гибридной модели
+        features = self._collect_enhanced_features(prices, volumes, idx, dynamic_threshold)
         
-        # Получаем веса для точек в окне с передачей массива цен и начального индекса
-        weights = self._get_weights(len(window) - self.config.state_length, prices, start_idx)
-        
-        # Собираем статистику переходов в этом окне
-        transitions = defaultdict(lambda: {1: 0, 2: 0})
-        
-        # Проходим по окну, собирая статистику
-        valid_points = 0
-        for i in range(self.config.state_length, len(window) - self.config.prediction_depth):
-            # Вычисляем абсолютный индекс
-            abs_idx = start_idx + i
-            
-            # Определяем состояние в этой точке
-            state = self._get_state(prices, abs_idx, dynamic_threshold)
-            if state is None:
-                continue
-                
-            # Если фокусируемся на лучших состояниях и текущее состояние не входит в список лучших,
-            # пропускаем его при сборе статистики
-            if self.config.focus_on_best_states and state not in self.config.best_states:
-                continue
-            
-            # Определяем, что произошло через prediction_depth точек
-            outcome = self._determine_outcome(prices, abs_idx, dynamic_threshold)
-            if outcome is None or outcome == 0:  # Пропускаем незначительные изменения
-                continue
-            
-            # Вес для этой точки
-            weight = weights[valid_points] if self.config.use_weighted_window else 1.0
-            valid_points += 1
-            
-            # Обновляем счетчики переходов
-            transitions[state][outcome] += weight
-        
-        # Если для текущего состояния нет статистики, не делаем предсказаний
-        if current_state not in transitions:
-            return {'prediction': 0, 'confidence': 0.0, 'state': current_state}
-        
-        # Вычисляем вероятности переходов для текущего состояния
-        transition_counts = transitions[current_state]
-        total = sum(transition_counts.values())
-        
-        # Если нет данных, не делаем предсказаний
-        if total == 0:
-            return {'prediction': 0, 'confidence': 0.0, 'state': current_state}
-        
-        # Вычисляем вероятности переходов
-        up_prob = transition_counts.get(1, 0) / total
-        down_prob = transition_counts.get(2, 0) / total
-        
-        # Получаем базовые вероятности из исторических данных
-        base_probs = self._get_probabilities(prices, idx)
-        
-        # Статистический буст на основе исторических тенденций
-        stat_boost = (base_probs['up_prob'] - base_probs['down_prob']) * 0.2
-        
-        # Выбираем предсказание с наибольшей вероятностью, если оно превышает порог
-        if up_prob > down_prob and up_prob >= self.config.min_confidence:
-            prediction = 1
-            confidence = min(1.0, up_prob + stat_boost)
-            
-            # Дополнительный фильтр по уверенности
-            if confidence < self.config.confidence_threshold:
-                prediction = 0
-                confidence = 0.0
-        elif down_prob > up_prob and down_prob >= self.config.min_confidence:
-            prediction = 2
-            confidence = min(1.0, down_prob - stat_boost)
-            
-            # Дополнительный фильтр по уверенности
-            if confidence < self.config.confidence_threshold:
-                prediction = 0
-                confidence = 0.0
+        # Если у нас есть обученная модель для текущего состояния, используем ее
+        if current_state in self.quantile_models:
+            model = self.quantile_models[current_state]
+            predictions = model.predict_single(features)
+            if idx % 1000 == 0:
+                print(f"  Using state model, predictions: {predictions}")
         else:
-            # Если нет явного преимущества или уверенность ниже порога
+            # Если модели нет, используем базовую модель (или None)
+            if self.base_quantile_model.is_fitted:
+                predictions = self.base_quantile_model.predict_single(features)
+                if idx % 1000 == 0:
+                    print(f"  Using base model, predictions: {predictions}")
+            else:
+                if idx % 1000 == 0:
+                    print(f"  No models available")
+                return {'prediction': 0, 'confidence': 0.0}
+        
+        # Если не удалось получить предсказания, возвращаем пустой результат
+        if predictions is None:
+            if idx % 1000 == 0:
+                print(f"  Predictions is None")
+            return {'prediction': 0, 'confidence': 0.0}
+        
+        # Определяем направление и уверенность на основе квантилей
+        median = predictions[0.5]  # медиана (50% квантиль)
+        lower = predictions[0.1]   # нижний квантиль (10%)
+        upper = predictions[0.9]   # верхний квантиль (90%)
+        
+        # Дополнительная отладочная информация
+        if idx % 1000 == 0:
+            print(f"  Median: {median:.6f}, Lower: {lower:.6f}, Upper: {upper:.6f}")
+        
+        # Определяем направление
+        prediction = 0
+        if median > dynamic_threshold:
+            prediction = 1  # рост
+        elif median < -dynamic_threshold:
+            prediction = 2  # падение
+        
+        # Рассчитываем уверенность на основе распределения квантилей
+        if prediction == 1:  # Рост
+            # Уверенность тем выше, чем дальше нижний квантиль от нуля
+            confidence = min(1.0, max(0, lower / dynamic_threshold + 0.5))
+        elif prediction == 2:  # Падение
+            # Уверенность тем выше, чем дальше верхний квантиль от нуля (в отрицательную сторону)
+            confidence = min(1.0, max(0, -upper / dynamic_threshold + 0.5))
+        else:
+            confidence = 0.0
+        
+        # Отладочная информация о решении
+        if idx % 1000 == 0:
+            print(f"  Decision: prediction={prediction}, confidence={confidence:.4f}, threshold={self.config.confidence_threshold}")
+        
+        # Применяем фильтр уверенности
+        if confidence < self.config.confidence_threshold:
             prediction = 0
             confidence = 0.0
         
-        return {
+        # Формируем итоговый результат
+        result = {
             'prediction': prediction,
             'confidence': confidence,
-            'up_prob': up_prob,
-            'down_prob': down_prob,
             'state': current_state,
-            'state_occurrences': total
+            'quantile_predictions': {q: float(val) for q, val in predictions.items()} if predictions else {},
+            'features': features.tolist() if isinstance(features, np.ndarray) else []  # для отладки
         }
+        
+        return result    
     
     def run_on_data(self, prices, verbose=True):
         """
@@ -613,9 +593,14 @@ class MarkovPredictor:
                 'success_rate': success_rate
             })
         
+        # Проверка на пустой список
+        if not data:
+            # Возвращаем пустой DataFrame с нужными столбцами
+            return pd.DataFrame(columns=['state', 'total', 'correct', 'success_rate'])
+        
         df = pd.DataFrame(data)
         return df.sort_values('total', ascending=False)
-    
+        
     def generate_report(self, results, save_path=None):
         """
         Генерирует подробный отчет о результатах предсказаний
