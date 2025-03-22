@@ -28,4 +28,4 @@ reports/
 
 # Виртуальное окружение
 venv/
-ENV/
+ENV/.DS_Store
