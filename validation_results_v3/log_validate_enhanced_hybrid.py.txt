@@ -1,0 +1,580 @@
+andriy@MacBook-Pro markov_quantile_predictor % python examples/validate_enhanced_hybrid.py
+Начало выполнения validate_enhanced_hybrid.py
+Проверка пути: validation_data
+Проверка пути: /Users/andriy/Visual Studio /predictor-analysis/validation_data
+Найдена директория с данными: /Users/andriy/Visual Studio /predictor-analysis/validation_data
+Используется конфигурация:
+- window_size: 750
+- prediction_depth: 15
+- min_confidence: 0.6
+- state_length: 4
+- significant_change_pct: 0.004
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+- max_coverage: 0.05
+
+Запуск пайплайна валидации...
+Поиск CSV файлов в директории /Users/andriy/Visual Studio /predictor-analysis/validation_data...
+Всего файлов в директории: 17
+Найден файл: btc_downtrend.csv (2319433 байт)
+Найден файл: predictor_btc_uptrend.csv (138916 байт)
+Найден файл: predictor_btc_low_volatility.csv (408902 байт)
+Найден файл: btc_sideways.csv (114411 байт)
+Найден файл: eth_base.csv (2381956 байт)
+Найден файл: btc_low_volatility.csv (2310620 байт)
+Найден файл: predictor_btc_5min.csv (408902 байт)
+Найден файл: predictor_btc_downtrend.csv (288890 байт)
+Найден файл: btc_base.csv (2368933 байт)
+Найден файл: predictor_btc_last_month.csv (408902 байт)
+Найден файл: predictor_btc_base.csv (408902 байт)
+Найден файл: btc_5min.csv (2136168 байт)
+Найден файл: predictor_btc_high_volatility.csv (32486 байт)
+Найден файл: btc_last_month.csv (2362881 байт)
+Найден файл: btc_high_volatility.csv (207716 байт)
+Найден файл: btc_uptrend.csv (2319433 байт)
+Найдено 16 файлов для валидации
+
+=== Валидация с параметрами: ws750_cov5 ===
+
+=== Валидация: btc_downtrend_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_downtrend.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_downtrend.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1704413760000  1704413819999  44183.5  44200.7  44183.5  44200.7        0.852    37654.4556
+1  1704413820000  1704413879999  44200.7  44200.7  44200.7  44200.7        0.000        0.0000
+2  1704413880000  1704413939999  44228.1  44230.3  44228.1  44230.3        0.474    20964.2316
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=38518.6, макс=48906.2, среднее=42926.75762999999
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 38/29235 [00:00<01:16, 379.45it/s]
+Model update: Collected samples for 12 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:39, 182.89it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_uptrend_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_uptrend.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_uptrend.csv...
+Загружено 10001 строк данных
+Первые 3 строки данных:
+   index    price
+0      0  44200.7
+1      1  44200.7
+2      2  44230.3
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=43096.8, макс=48906.2, среднее=45068.278092190776
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 10001 точках данных...
+Processing:   0%|▍                                                                                                    | 39/9236 [00:00<00:23, 387.88it/s]
+Model update: Collected samples for 12 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   1%|▌                                                                                                    | 51/9236 [00:00<00:49, 184.33it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_low_volatility_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_low_volatility.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_low_volatility.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+   index    price
+0      0  44200.7
+1      1  44200.7
+2      2  44230.3
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=38518.6, макс=47611.0, среднее=42649.449706666666
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 40/29235 [00:00<01:14, 392.25it/s]
+Model update: Collected samples for 12 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:38, 183.90it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_sideways_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_sideways.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_sideways.csv...
+Загружено 1440 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end      open      high      low     close  volume_base  volume_quote
+0  1733529600000  1733529659999   99940.0  100019.6  99916.1  100018.5        2.638  2.637734e+05
+1  1733529660000  1733529719999  100018.6  100025.2  99804.8   99804.8       15.445  1.543019e+06
+2  1733529720000  1733529779999   99804.7   99839.9  99759.0   99762.4        4.760  4.750525e+05
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=99188.4, макс=100626.1, среднее=99855.83930555558
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 1440 точках данных...
+Processing:   6%|█████▋                                                                                                | 38/675 [00:00<00:01, 378.40it/s]
+Model update: Collected samples for 5 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   8%|███████▋                                                                                              | 51/675 [00:00<00:03, 177.22it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: eth_base_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/eth_base.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/eth_base.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1742729640000  1742729699999  2014.19  2015.28  2014.10  2015.28       30.805   62058.51242
+1  1742729580000  1742729639999  2014.38  2015.40  2014.04  2014.20       32.208   64886.50874
+2  1742729520000  1742729579999  2015.04  2015.39  2014.37  2014.37       33.975   68447.61657
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=1759.67, макс=2543.29, среднее=2033.1528566666668
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 38/29235 [00:00<01:17, 378.96it/s]
+Model update: Collected samples for 5 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:46, 175.16it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_low_volatility_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_low_volatility.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_low_volatility.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1704413760000  1704413819999  44183.5  44200.7  44183.5  44200.7        0.852    37654.4556
+1  1704413820000  1704413879999  44200.7  44200.7  44200.7  44200.7        0.000        0.0000
+2  1704413880000  1704413939999  44228.1  44230.3  44228.1  44230.3        0.474    20964.2316
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=38518.6, макс=47611.0, среднее=42649.449706666666
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 40/29235 [00:00<01:13, 397.52it/s]
+Model update: Collected samples for 12 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:38, 184.67it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_5min_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_5min.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_5min.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+   index    price
+0      0  44245.9
+1      1  44247.5
+2      2  44247.1
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=38533.4, макс=73744.0, среднее=56086.444883333344
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 39/29235 [00:00<01:15, 386.58it/s]
+Model update: Collected samples for 10 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:43, 178.93it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_downtrend_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_downtrend.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_downtrend.csv...
+Загружено 19999 строк данных
+Первые 3 строки данных:
+   index    price
+0      1  46392.7
+1      2  46388.1
+2      3  46393.5
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=38518.6, макс=46509.1, среднее=41855.83677683884
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 19999 точках данных...
+Processing:   0%|▏                                                                                                   | 39/19234 [00:00<00:49, 388.20it/s]
+Model update: Collected samples for 9 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▎                                                                                                   | 51/19234 [00:00<01:44, 183.53it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_base_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_base.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_base.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1742469960000  1742470019999  85209.9  85213.9  85176.1  85196.0        2.993   254998.6277
+1  1742469900000  1742469959999  85174.1  85209.9  85174.1  85209.9        1.382   117740.6093
+2  1742469840000  1742469899999  85139.7  85178.0  85139.7  85174.1        7.189   612133.2744
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=76576.1, макс=94930.0, среднее=84820.68049666665
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 40/29235 [00:00<01:14, 389.91it/s]
+Model update: Collected samples for 13 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:40, 181.43it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_last_month_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_last_month.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_last_month.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+   index    price
+0      0  95598.9
+1      1  95574.0
+2      2  95530.1
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=76576.1, макс=99457.0, среднее=89449.61701666667
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 39/29235 [00:00<01:16, 380.66it/s]
+Model update: Collected samples for 5 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:42, 179.28it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_base_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_base.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_base.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+   index    price
+0      0  85196.0
+1      1  85209.9
+2      2  85174.1
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=76576.1, макс=94930.0, среднее=84820.68049666665
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 40/29235 [00:00<01:13, 394.61it/s]
+Model update: Collected samples for 13 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:39, 182.48it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_5min_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_5min.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_5min.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+              ts       op       hi       lo       cl     vb           vq
+0  1704413700000  44183.5  44248.7  44183.5  44245.9  2.961  130963.8193
+1  1704414000000  44245.9  44262.6  44236.6  44247.5  5.144  227672.7048
+2  1704414300000  44262.6  44262.6  44238.0  44247.1  0.717   31734.4331
+Столбцы: ['ts', 'op', 'hi', 'lo', 'cl', 'vb', 'vq']
+ОШИБКА: Не найдена колонка с ценой в /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_5min.csv
+Доступные колонки: ['ts', 'op', 'hi', 'lo', 'cl', 'vb', 'vq']
+
+=== Валидация: btc_high_volatility_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_high_volatility.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/predictor_btc_high_volatility.csv...
+Загружено 2567 строк данных
+Первые 3 строки данных:
+   index    price
+0      0  43849.9
+1      1  44193.0
+2      2  43205.2
+Столбцы: ['index', 'price']
+Используется колонка цены: price
+Статистика цен: мин=39349.8, макс=109381.1, среднее=70438.94425399299
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 2567 точках данных...
+Processing:   2%|██                                                                                                   | 37/1802 [00:00<00:04, 369.45it/s]
+Model update: Collected samples for 5 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   3%|██▊                                                                                                  | 51/1802 [00:00<00:10, 173.91it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_last_month_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_last_month.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_last_month.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1739879580000  1739879639999  95625.2  95625.2  95598.9  95598.9        0.911    87106.4548
+1  1739879640000  1739879699999  95600.7  95600.7  95574.0  95574.0        0.304    29058.0198
+2  1739879700000  1739879759999  95572.1  95572.1  95530.1  95530.1        0.406    38795.0433
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=76576.1, макс=99457.0, среднее=89449.61701666667
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 39/29235 [00:00<01:16, 381.47it/s]
+Model update: Collected samples for 5 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:42, 179.87it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_high_volatility_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_high_volatility.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_high_volatility.csv...
+Загружено 2567 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1704420000000  1704420059999  43383.6  43909.5  43383.6  43849.9       31.566  1.377957e+06
+1  1704445260000  1704445319999  43969.5  44218.2  43969.5  44193.0        7.154  3.151611e+05
+2  1704465720000  1704465779999  43647.7  43647.7  43177.5  43205.2       29.817  1.298056e+06
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=39349.8, макс=109381.1, среднее=70438.94425399299
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 2567 точках данных...
+Processing:   2%|██▏                                                                                                  | 38/1802 [00:00<00:04, 379.78it/s]
+Model update: Collected samples for 5 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   3%|██▊                                                                                                  | 51/1802 [00:00<00:09, 176.54it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+
+=== Валидация: btc_uptrend_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_uptrend.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_uptrend.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1704413760000  1704413819999  44183.5  44200.7  44183.5  44200.7        0.852    37654.4556
+1  1704413820000  1704413879999  44200.7  44200.7  44200.7  44200.7        0.000        0.0000
+2  1704413880000  1704413939999  44228.1  44230.3  44228.1  44230.3        0.474    20964.2316
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=38518.6, макс=48906.2, среднее=42926.75762999999
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 40/29235 [00:00<01:14, 392.76it/s]
+Model update: Collected samples for 12 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   0%|▏                                                                                                   | 51/29235 [00:00<02:36, 186.08it/s]
+ОШИБКА при выполнении модели: 0.1
+Traceback (most recent call last):
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/examples/validate_enhanced_hybrid.py", line 90, in run_validation_on_dataset
+    results = predictor.run_on_data(prices, volumes)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 612, in run_on_data
+    pred_result = self.predict_at_point(prices, volumes, idx, max_predictions, current_predictions)
+  File "/Users/andriy/Visual Studio /markov_quantile_predictor/markov_quantile_predictor/hybrid_predictor.py", line 531, in predict_at_point
+    lower = predictions[0.1]   # нижний квантиль (10%)
+KeyError: 0.1
+Нет результатов валидации!
+
+Сводная таблица отсутствует - возможно, произошла ошибка.
+Завершение выполнения validate_enhanced_hybrid.py
+andriy@MacBook-Pro markov_quantile_predictor % 

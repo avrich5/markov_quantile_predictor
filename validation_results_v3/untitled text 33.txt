@@ -1,0 +1,125 @@
+andriy@MacBook-Pro markov_quantile_predictor % python examples/validate_enhanced_hybrid.py
+Начало выполнения validate_enhanced_hybrid.py
+Проверка пути: validation_data
+Проверка пути: /Users/andriy/Visual Studio /predictor-analysis/validation_data
+Найдена директория с данными: /Users/andriy/Visual Studio /predictor-analysis/validation_data
+Используется конфигурация:
+- window_size: 750
+- prediction_depth: 15
+- min_confidence: 0.6
+- state_length: 4
+- significant_change_pct: 0.004
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+- max_coverage: 0.05
+
+Запуск пайплайна валидации...
+Поиск CSV файлов в директории /Users/andriy/Visual Studio /predictor-analysis/validation_data...
+Всего файлов в директории: 17
+Найден файл: btc_downtrend.csv (2319433 байт)
+Найден файл: predictor_btc_uptrend.csv (138916 байт)
+Найден файл: predictor_btc_low_volatility.csv (408902 байт)
+Найден файл: btc_sideways.csv (114411 байт)
+Найден файл: eth_base.csv (2381956 байт)
+Найден файл: btc_low_volatility.csv (2310620 байт)
+Найден файл: predictor_btc_5min.csv (408902 байт)
+Найден файл: predictor_btc_downtrend.csv (288890 байт)
+Найден файл: btc_base.csv (2368933 байт)
+Найден файл: predictor_btc_last_month.csv (408902 байт)
+Найден файл: predictor_btc_base.csv (408902 байт)
+Найден файл: btc_5min.csv (2136168 байт)
+Найден файл: predictor_btc_high_volatility.csv (32486 байт)
+Найден файл: btc_last_month.csv (2362881 байт)
+Найден файл: btc_high_volatility.csv (207716 байт)
+Найден файл: btc_uptrend.csv (2319433 байт)
+Найдено 16 файлов для валидации
+
+=== Валидация с параметрами: ws750_cov5 ===
+
+=== Валидация: btc_downtrend_ws750_cov5 ===
+Запуск валидации на наборе данных: /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_downtrend.csv
+Чтение файла /Users/andriy/Visual Studio /predictor-analysis/validation_data/btc_downtrend.csv...
+Загружено 30000 строк данных
+Первые 3 строки данных:
+        ts_start         ts_end     open     high      low    close  volume_base  volume_quote
+0  1704413760000  1704413819999  44183.5  44200.7  44183.5  44200.7        0.852    37654.4556
+1  1704413820000  1704413879999  44200.7  44200.7  44200.7  44200.7        0.000        0.0000
+2  1704413880000  1704413939999  44228.1  44230.3  44228.1  44230.3        0.474    20964.2316
+Столбцы: ['ts_start', 'ts_end', 'open', 'high', 'low', 'close', 'volume_base', 'volume_quote']
+Используется колонка цены: close
+Статистика цен: мин=38518.6, макс=48906.2, среднее=42926.75762999999
+Создание предиктора с конфигурацией:
+- window_size: 750
+- prediction_depth: 15
+- state_length: 4
+- quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+- confidence_threshold: 0.5
+Initialized with quantiles: (0.05, 0.25, 0.5, 0.75, 0.95)
+Запуск предиктора на 30000 точках данных...
+Processing:   0%|▏                                                                                                   | 39/29235 [00:00<01:16, 383.39it/s]
+Model update: Collected samples for 12 states
+Updated 1 state models, total models: 1
+Base model fitted with 51 samples
+Processing:   1%|▎                                                               | 150/29235 [00:00<01:42, 283.70it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 5 state models, total models: 5
+Base model fitted with 150 samples
+Processing:   1%|▌                                                               | 250/29235 [00:01<02:55, 165.56it/s, Predictions=6, Success Rate=0.00%]Debug at idx=1000: State=(1, 1, 1, 2), Threshold=0.000663
+  Using state model, predictions: {0.05: -0.012362273122114131, 0.25: 0.0021651446759325312, 0.5: 0.0027727286510522533, 0.75: 0.002653439897476602, 0.95: 0.004691712073415566}
+  Квантили: 0.05%=-0.012362, 0.25%=0.002165, 0.5%=0.002773, 0.75%=0.002653, 0.95%=0.004692
+  Decision: prediction=1, confidence=0.0000, threshold=0.5
+
+Model update: Collected samples for 13 states
+Updated 6 state models, total models: 6
+Base model fitted with 250 samples
+Processing:   1%|▊                                                               | 350/29235 [00:02<03:00, 159.76it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 7 state models, total models: 7
+Base model fitted with 350 samples
+Processing:   2%|▉                                                               | 450/29235 [00:03<04:03, 118.25it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 7 state models, total models: 7
+Base model fitted with 450 samples
+Processing:   2%|█▏                                                               | 550/29235 [00:05<05:01, 95.13it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 9 state models, total models: 9
+Base model fitted with 550 samples
+Processing:   2%|█▍                                                               | 650/29235 [00:06<05:53, 80.93it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 10 state models, total models: 10
+Base model fitted with 650 samples
+Processing:   3%|█▋                                                               | 750/29235 [00:09<06:49, 69.56it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 10 state models, total models: 10
+Base model fitted with 750 samples
+Processing:   3%|█▉                                                               | 850/29235 [00:11<07:44, 61.05it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 10 state models, total models: 10
+Base model fitted with 850 samples
+Processing:   3%|██                                                               | 950/29235 [00:14<08:40, 54.33it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 13 states
+Updated 10 state models, total models: 10
+Base model fitted with 950 samples
+Processing:   4%|██▎                                                             | 1050/29235 [00:17<09:21, 50.16it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 14 states
+Updated 10 state models, total models: 10
+Base model fitted with 1050 samples
+Processing:   4%|██▌                                                             | 1150/29235 [00:20<10:12, 45.87it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 14 states
+Updated 11 state models, total models: 11
+Base model fitted with 1150 samples
+Processing:   4%|██▋                                                             | 1250/29235 [00:23<11:05, 42.03it/s, Predictions=6, Success Rate=0.00%]Debug at idx=2000: State=(1, 1, 1, 1), Threshold=0.000534
+  Using state model, predictions: {0.05: -0.003251396925746608, 0.25: -0.0012827340819725475, 0.5: -0.00018979444237554973, 0.75: 0.0010596792062040894, 0.95: 0.0033308542044050427}
+  Квантили: 0.05%=-0.003251, 0.25%=-0.001283, 0.5%=-0.000190, 0.75%=0.001060, 0.95%=0.003331
+  Decision: prediction=0, confidence=0.0000, threshold=0.5
+
+Model update: Collected samples for 14 states
+Updated 11 state models, total models: 11
+Base model fitted with 1250 samples
+Processing:   5%|██▉                                                             | 1350/29235 [00:27<11:57, 38.85it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 14 states
+Updated 11 state models, total models: 11
+Base model fitted with 1350 samples
+Processing:   5%|███▏                                                            | 1450/29235 [00:31<12:34, 36.83it/s, Predictions=6, Success Rate=0.00%]
+Model update: Collected samples for 14 states
+Upda

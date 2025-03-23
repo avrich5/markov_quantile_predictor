@@ -164,9 +164,11 @@ class MarkovQuantilePredictor(MarkovPredictor):
         # Собираем данные для отображения квантилей
         indices = []
         medians = []
-        lower_bounds = []
-        upper_bounds = []
-        
+        lower_bounds_90 = []
+        upper_bounds_90 = []
+        lower_bounds_extreme = []
+        upper_bounds_extreme = []
+
         for r in quantile_results:
             idx = r['index']
             indices.append(idx)
@@ -177,17 +179,24 @@ class MarkovQuantilePredictor(MarkovPredictor):
             # Преобразуем из процентного изменения в абсолютное значение цены
             price = prices[idx]
             medians.append(price * (1 + q_preds[0.5]))
-            lower_bounds.append(price * (1 + q_preds[0.1]))
-            upper_bounds.append(price * (1 + q_preds[0.9]))
-        
+            lower_bounds_90.append(price * (1 + q_preds[0.1]))
+            upper_bounds_90.append(price * (1 + q_preds[0.9]))
+            lower_bounds_extreme.append(price * (1 + q_preds[0.05]))
+            upper_bounds_extreme.append(price * (1 + q_preds[0.95]))
+
         # Отображаем медианные предсказания
         plt.scatter(indices, medians, color='green', s=30, alpha=0.7, label='Медианное предсказание')
-        
-        # Отображаем интервалы предсказаний
+
+        # Отображаем интервалы предсказаний [10%, 90%]
         for i in range(len(indices)):
-            plt.plot([indices[i], indices[i]], [lower_bounds[i], upper_bounds[i]], 
-                     color='green', alpha=0.3)
-        
+            plt.plot([indices[i], indices[i]], [lower_bounds_90[i], upper_bounds_90[i]], 
+                    color='green', alpha=0.3)
+
+        # Отображаем интервалы предсказаний [5%, 95%]
+        for i in range(len(indices)):
+            plt.plot([indices[i], indices[i]], [lower_bounds_extreme[i], upper_bounds_extreme[i]], 
+                    color='blue', alpha=0.2, linestyle='--')
+            
         plt.title('Предсказания с квантильными интервалами')
         plt.xlabel('Индекс')
         plt.ylabel('Цена')
@@ -229,54 +238,112 @@ class MarkovQuantilePredictor(MarkovPredictor):
         # Анализируем результаты квантильных предсказаний
         
         # 1. Точность квантильных предсказаний
-        # Считаем сколько раз фактическое значение попало в интервал [q10, q90]
-        actual_in_interval = 0
-        
+        # Считаем сколько раз фактическое значение попало в разные интервалы
+        actual_in_interval_90 = 0  # [10%, 90%]
+        actual_in_interval_mid = 0  # [25%, 75%]
+        actual_in_interval_extreme = 0  # [5%, 95%]
+
         for r in quantile_results:
             idx = r['index']
             if idx + self.config.prediction_depth >= len(prices):
                 continue
-                
+                    
             # Фактическое изменение
             actual_change = prices[idx + self.config.prediction_depth] / prices[idx] - 1
             
             # Предсказанные квантили
+            q05 = r['quantile_predictions'][0.05]
             q10 = r['quantile_predictions'][0.1]
+            q25 = r['quantile_predictions'][0.25]
+            q75 = r['quantile_predictions'][0.75]
             q90 = r['quantile_predictions'][0.9]
+            q95 = r['quantile_predictions'][0.95]
             
-            # Проверяем, попало ли фактическое изменение в интервал
+            # Проверяем, попало ли фактическое изменение в разные интервалы
             if q10 <= actual_change <= q90:
-                actual_in_interval += 1
+                actual_in_interval_90 += 1
+            if q25 <= actual_change <= q75:
+                actual_in_interval_mid += 1
+            if q05 <= actual_change <= q95:
+                actual_in_interval_extreme += 1
+
+        # Вычисляем процент попаданий в разные интервалы
+        interval_coverage_90 = actual_in_interval_90 / len(quantile_results) * 100 if quantile_results else 0
+        interval_coverage_mid = actual_in_interval_mid / len(quantile_results) * 100 if quantile_results else 0
+        interval_coverage_extreme = actual_in_interval_extreme / len(quantile_results) * 100 if quantile_results else 0
+
+#         # 2. Средние предсказанные изменения для разных квантилей
+#         mean_q10 = np.mean([r['quantile_predictions'][0.1] * 100 for r in quantile_results])
+#         mean_q50 = np.mean([r['quantile_predictions'][0.5] * 100 for r in quantile_results])
+#         mean_q90 = np.mean([r['quantile_predictions'][0.9] * 100 for r in quantile_results])
         
-        # Вычисляем процент попаданий в интервал
-        interval_coverage = actual_in_interval / len(quantile_results) * 100 if quantile_results else 0
+#         # 3. Ширина предсказанных интервалов
+#         mean_interval_width = np.mean([(r['quantile_predictions'][0.9] - r['quantile_predictions'][0.1]) * 100 
+#                                        for r in quantile_results])
         
+#         # Формируем дополнительный отчет
+#         quantile_report = f"""
+# ## Статистика квантильной регрессии
+
+# ### Общая информация
+# - Количество предсказаний с квантильной регрессией: {len(quantile_results)}
+# - Процент попаданий фактического значения в интервал [10%, 90%]: {interval_coverage:.2f}%
+
+# ### Средние предсказанные изменения
+# - Средний нижний квантиль (10%): {mean_q10:.2f}%
+# - Средний медианный квантиль (50%): {mean_q50:.2f}%
+# - Средний верхний квантиль (90%): {mean_q90:.2f}%
+# - Средняя ширина интервала [10%, 90%]: {mean_interval_width:.2f}%
+
+# ### Квантильные модели
+# - Количество обученных моделей (по состояниям): {len(self.quantile_models)}
+# """
+
         # 2. Средние предсказанные изменения для разных квантилей
+        mean_q05 = np.mean([r['quantile_predictions'][0.05] * 100 for r in quantile_results])
         mean_q10 = np.mean([r['quantile_predictions'][0.1] * 100 for r in quantile_results])
+        mean_q25 = np.mean([r['quantile_predictions'][0.25] * 100 for r in quantile_results])
         mean_q50 = np.mean([r['quantile_predictions'][0.5] * 100 for r in quantile_results])
+        mean_q75 = np.mean([r['quantile_predictions'][0.75] * 100 for r in quantile_results])
         mean_q90 = np.mean([r['quantile_predictions'][0.9] * 100 for r in quantile_results])
-        
+        mean_q95 = np.mean([r['quantile_predictions'][0.95] * 100 for r in quantile_results])
+
         # 3. Ширина предсказанных интервалов
-        mean_interval_width = np.mean([(r['quantile_predictions'][0.9] - r['quantile_predictions'][0.1]) * 100 
-                                       for r in quantile_results])
-        
+        mean_interval_width_90 = np.mean([(r['quantile_predictions'][0.9] - r['quantile_predictions'][0.1]) * 100 
+                                        for r in quantile_results])
+        mean_interval_width_50 = np.mean([(r['quantile_predictions'][0.75] - r['quantile_predictions'][0.25]) * 100 
+                                        for r in quantile_results])
+        mean_interval_width_90_extreme = np.mean([(r['quantile_predictions'][0.95] - r['quantile_predictions'][0.05]) * 100 
+                                            for r in quantile_results])
+
         # Формируем дополнительный отчет
         quantile_report = f"""
-## Статистика квантильной регрессии
+    ## Статистика квантильной регрессии
 
-### Общая информация
-- Количество предсказаний с квантильной регрессией: {len(quantile_results)}
-- Процент попаданий фактического значения в интервал [10%, 90%]: {interval_coverage:.2f}%
+    ### Общая информация
+    - Количество предсказаний с квантильной регрессией: {len(quantile_results)}
+    - Процент попаданий фактического значения в интервал [10%, 90%]: {interval_coverage_90:.2f}%
+    - Процент попаданий фактического значения в интервал [5%, 95%]: {interval_coverage_extreme:.2f}%
+    - Процент попаданий фактического значения в интервал [25%, 75%]: {interval_coverage_mid:.2f}%
 
-### Средние предсказанные изменения
-- Средний нижний квантиль (10%): {mean_q10:.2f}%
-- Средний медианный квантиль (50%): {mean_q50:.2f}%
-- Средний верхний квантиль (90%): {mean_q90:.2f}%
-- Средняя ширина интервала [10%, 90%]: {mean_interval_width:.2f}%
+    ### Средние предсказанные изменения
+    - Средний квантиль 5%: {mean_q05:.2f}%
+    - Средний квантиль 10%: {mean_q10:.2f}%
+    - Средний квантиль 25%: {mean_q25:.2f}%
+    - Средний медианный квантиль (50%): {mean_q50:.2f}%
+    - Средний квантиль 75%: {mean_q75:.2f}%
+    - Средний квантиль 90%: {mean_q90:.2f}%
+    - Средний квантиль 95%: {mean_q95:.2f}%
 
-### Квантильные модели
-- Количество обученных моделей (по состояниям): {len(self.quantile_models)}
-"""
+    ### Ширина предсказанных интервалов
+    - Средняя ширина интервала [10%, 90%]: {mean_interval_width_90:.2f}%
+    - Средняя ширина интервала [25%, 75%]: {mean_interval_width_50:.2f}%
+    - Средняя ширина интервала [5%, 95%]: {mean_interval_width_90_extreme:.2f}%
+
+    ### Квантильные модели
+    - Количество обученных моделей (по состояниям): {len(self.quantile_models)}
+    """
+
         
         # Объединяем отчеты
         full_report = base_report + quantile_report
@@ -412,6 +479,7 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         combined_features = np.concatenate([basic_features, market_features, state_features])
         return combined_features
     
+
     def predict_at_point(self, prices, volumes=None, idx=None, max_predictions=None, current_predictions=0):
         # Базовые проверки (как в родительском классе)
         if idx < self.config.window_size or idx < self.config.state_length:
@@ -458,15 +526,34 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
                 print(f"  Predictions is None")
             return {'prediction': 0, 'confidence': 0.0}
         
-        # ... остальной код метода ...
-        # Определяем направление и уверенность на основе квантилей
-        median = predictions[0.5]  # медиана (50% квантиль)
-        lower = predictions[0.1]   # нижний квантиль (10%)
-        upper = predictions[0.9]   # верхний квантиль (90%)
-
+        # Определяем квантили в соответствии с конфигурацией
+        # Находим ближайшие к 0.05, 0.5 и 0.95 квантили из доступных
+        available_quantiles = sorted(predictions.keys())
+        
+        # Находим ближайший квантиль к 0.05 (нижний экстремальный)
+        lower_extreme_q = min(available_quantiles, key=lambda q: abs(q - 0.05))
+        lower_extreme = predictions[lower_extreme_q]
+        
+        # Находим ближайший квантиль к 0.25 (нижний средний)
+        lower_mid_q = min(available_quantiles, key=lambda q: abs(q - 0.25))
+        lower_mid = predictions[lower_mid_q]
+        
+        # Находим ближайший квантиль к 0.5 (медиана)
+        median_q = min(available_quantiles, key=lambda q: abs(q - 0.5))
+        median = predictions[median_q]
+        
+        # Находим ближайший квантиль к 0.75 (верхний средний)
+        upper_mid_q = min(available_quantiles, key=lambda q: abs(q - 0.75))
+        upper_mid = predictions[upper_mid_q]
+        
+        # Находим ближайший квантиль к 0.95 (верхний экстремальный)
+        upper_extreme_q = min(available_quantiles, key=lambda q: abs(q - 0.95))
+        upper_extreme = predictions[upper_extreme_q]
+        
         # Отладочная информация
         if idx % 1000 == 0:
-            print(f"  Median: {median:.6f}, Lower: {lower:.6f}, Upper: {upper:.6f}")
+            print(f"  Квантили: {lower_extreme_q}%={lower_extreme:.6f}, {lower_mid_q}%={lower_mid:.6f}, " +
+                f"{median_q}%={median:.6f}, {upper_mid_q}%={upper_mid:.6f}, {upper_extreme_q}%={upper_extreme:.6f}")
 
         # Определяем направление
         prediction = 0
@@ -475,13 +562,18 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         elif median < -dynamic_threshold:
             prediction = 2  # падение
 
-        # Рассчитываем уверенность на основе распределения квантилей
+        # *** ЗДЕСЬ ИЗМЕНЕН РАСЧЕТ УВЕРЕННОСТИ ***
+        # Используем более простой и надежный подход для расчета уверенности
         if prediction == 1:  # Рост
-            # Уверенность тем выше, чем дальше нижний квантиль от нуля
-            confidence = min(1.0, max(0, lower / dynamic_threshold + 0.5))
+            # Для роста: насколько все квантили выше порога
+            # Чем больше квантилей выше порога, тем выше уверенность
+            quantiles_above_threshold = sum(1 for q in [lower_extreme, lower_mid, median, upper_mid, upper_extreme] if q > dynamic_threshold)
+            confidence = quantiles_above_threshold / 5.0  # От 0 до 1
         elif prediction == 2:  # Падение
-            # Уверенность тем выше, чем дальше верхний квантиль от нуля (в отрицательную сторону)
-            confidence = min(1.0, max(0, -upper / dynamic_threshold + 0.5))
+            # Для падения: насколько все квантили ниже отрицательного порога
+            # Чем больше квантилей ниже отрицательного порога, тем выше уверенность
+            quantiles_below_neg_threshold = sum(1 for q in [lower_extreme, lower_mid, median, upper_mid, upper_extreme] if q < -dynamic_threshold)
+            confidence = quantiles_below_neg_threshold / 5.0  # От 0 до 1
         else:
             confidence = 0.0
 
@@ -618,6 +710,11 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
             
             return results
        
+    """
+Функция _update_quantile_models в классе EnhancedHybridPredictor
+Обновляем формирование отчета для работы с уменьшенным набором квантилей
+"""
+
     def _update_quantile_models(self, prices, results):
         # Группируем результаты по состояниям
         state_data = defaultdict(lambda: {'X': [], 'y': []})
