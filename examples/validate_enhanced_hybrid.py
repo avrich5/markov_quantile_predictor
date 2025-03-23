@@ -16,7 +16,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from markov_quantile_predictor import PredictorConfig
 from markov_quantile_predictor.utils import load_data, ensure_dir, get_timestamp
-from markov_quantile_predictor.hybrid_predictor import EnhancedHybridPredictor
+from markov_quantile_predictor.models.hybrid_predictor import EnhancedHybridPredictor
+from markov_quantile_predictor.models.early_stopping import run_on_data_with_early_stopping
 
 # Создаем директорию для результатов валидации
 validation_results_dir = "validation_results_v3"
@@ -86,15 +87,34 @@ def run_validation_on_dataset(data_file, config, max_coverage, use_volumes=False
         predictor = EnhancedHybridPredictor(config)
         print(f"Запуск предиктора на {len(prices)} точках данных...")
         
+        # try:
+        #     results = predictor.run_on_data(prices, volumes)
+        #     print(f"Выполнение завершено. Получено {len(results)} результатов.")
+        # except Exception as e:
+        #     print(f"ОШИБКА при выполнении модели: {e}")
+        #     import traceback
+        #     traceback.print_exc()
+        #     return None
         try:
-            results = predictor.run_on_data(prices, volumes)
+            # Добавляем метод run_on_data_with_early_stopping к экземпляру предиктора
+            import types
+            predictor.run_on_data_with_early_stopping = types.MethodType(run_on_data_with_early_stopping, predictor)
+            
+            # Запускаем модель с ранним остановом
+            results = predictor.run_on_data_with_early_stopping(
+                prices, 
+                volumes,
+                plateau_window_percent=5.0,  # Окно 5% от всех данных
+                plateau_threshold=0.1,       # Изменение меньше 0.1% считается плато
+                min_progress_percent=15.0    # Начинаем проверять плато после 15% данных
+            )
             print(f"Выполнение завершено. Получено {len(results)} результатов.")
         except Exception as e:
             print(f"ОШИБКА при выполнении модели: {e}")
             import traceback
             traceback.print_exc()
             return None
-        
+
         # Выводим некоторые результаты для проверки
         predictions_count = sum(1 for r in results if r.get('prediction', 0) != 0)
         print(f"Количество ненулевых предсказаний: {predictions_count}")

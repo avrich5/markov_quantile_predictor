@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from markov_quantile_predictor import PredictorConfig
 from markov_quantile_predictor.utils import load_data, ensure_dir, get_timestamp
-from markov_quantile_predictor.hybrid_predictor import EnhancedHybridPredictor  # наш новый класс
+from markov_quantile_predictor.models.hybrid_predictor import EnhancedHybridPredictor  # наш новый класс
 
 def main():
     # Создаем директорию для отчетов
