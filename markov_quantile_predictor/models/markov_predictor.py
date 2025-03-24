@@ -112,6 +112,7 @@ class MarkovPredictor:
         
         return weights
     
+    # Как в успешной версии
     def _calculate_dynamic_threshold(self, prices, idx):
         """
         Вычисляет динамический порог для определения значимого изменения цены
@@ -130,8 +131,13 @@ class MarkovPredictor:
         changes = self.price_changes[start_idx:idx-1]
         
         # Используем 75-й процентиль абсолютных изменений или заданный порог, если данных недостаточно
-        return np.percentile(np.abs(changes), 75) if len(changes) > 0 else self.config.significant_change_pct
-    
+        result = np.percentile(np.abs(changes), 75) if len(changes) > 0 else self.config.significant_change_pct
+        
+        if idx % 1000 == 0:
+            print(f"DEBUG: dynamic_threshold at idx={idx}: {result}, config threshold: {self.config.significant_change_pct}")
+        
+        return result
+        
     def _determine_movement(self, current_price, next_price, dynamic_threshold):
         """
         Определяет направление движения с учетом порога значимого изменения
