@@ -137,224 +137,304 @@ class MarkovQuantilePredictor(MarkovPredictor):
         
         return np.array(X), np.array(y), current_features
         
-    def visualize_results(self, prices, results, save_path=None):
-        """
-        Визуализирует результаты предсказаний, включая информацию от квантильной регрессии
-        
-        Параметры:
-        prices (numpy.array): массив цен
-        results (list): результаты предсказаний
-        save_path (str): путь для сохранения графиков
-        """
-        # Сначала используем метод визуализации родительского класса
-        super().visualize_results(prices, results, save_path)
-        
-        # Дополнительно создаем график с информацией от квантильной регрессии
-        quantile_results = [r for r in results if 'quantile_predictions' in r]
-        
-        if not quantile_results:
-            return  # Нет данных для визуализации
-        
-        # Создаем новый график
-        plt.figure(figsize=(15, 8))
-        
-        # График цен
-        plt.plot(prices, color='blue', alpha=0.5, label='Цена')
-        
-        # Собираем данные для отображения квантилей
-        indices = []
-        medians = []
-        lower_bounds_90 = []
-        upper_bounds_90 = []
-        lower_bounds_extreme = []
-        upper_bounds_extreme = []
+# Исправление для метода visualize_results в классе MarkovQuantilePredictor
 
-        for r in quantile_results:
-            idx = r['index']
-            indices.append(idx)
+def visualize_results(self, prices, results, save_path=None):
+    """
+    Визуализирует результаты предсказаний, включая информацию от квантильной регрессии
+    с безопасной обработкой различных наборов квантилей
+    
+    Параметры:
+    prices (numpy.array): массив цен
+    results (list): результаты предсказаний
+    save_path (str): путь для сохранения графиков
+    """
+    # Сначала используем метод визуализации родительского класса
+    super().visualize_results(prices, results, save_path)
+    
+    # Дополнительно создаем график с информацией от квантильной регрессии
+    quantile_results = [r for r in results if 'quantile_predictions' in r and r['quantile_predictions']]
+    
+    if not quantile_results:
+        return  # Нет данных для визуализации
+    
+    # Определим доступные квантили из первого результата с непустыми предсказаниями
+    first_result = next((r for r in quantile_results if r['quantile_predictions']), None)
+    if not first_result:
+        return
+        
+    available_quantiles = sorted(first_result['quantile_predictions'].keys())
+    if not available_quantiles:
+        return
+    
+    # Найдем ближайшие доступные квантили к нужным значениям
+    median_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.5))
+    lower_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.1))
+    upper_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.9))
+    
+    # Создаем новый график
+    plt.figure(figsize=(15, 8))
+    
+    # График цен
+    plt.plot(prices, color='blue', alpha=0.5, label='Цена')
+    
+    # Собираем данные для отображения квантилей
+    indices = []
+    medians = []
+    lower_bounds_90 = []
+    upper_bounds_90 = []
+    
+    # Если есть крайние квантили (близкие к 0.05 и 0.95), используем их тоже
+    has_extreme_quantiles = len(available_quantiles) >= 4  # Минимум 4 квантиля для крайних значений
+    
+    # Находим крайние квантили, если они есть
+    extreme_lower_q = None
+    extreme_upper_q = None
+    
+    if has_extreme_quantiles:
+        # Используем самый нижний и самый верхний доступные квантили
+        extreme_lower_q = min(available_quantiles)
+        extreme_upper_q = max(available_quantiles)
+        
+        # Если они совпадают с квантилями 10/90, то не используем их отдельно
+        if extreme_lower_q == lower_q:
+            extreme_lower_q = None
+        if extreme_upper_q == upper_q:
+            extreme_upper_q = None
             
-            # Получаем предсказания квантилей
-            q_preds = r['quantile_predictions']
+        # Если оба крайних квантиля совпадают с основными, отключаем отрисовку крайних
+        if extreme_lower_q is None and extreme_upper_q is None:
+            has_extreme_quantiles = False
+    
+    lower_bounds_extreme = []
+    upper_bounds_extreme = []
+
+    for r in quantile_results:
+        q_preds = r['quantile_predictions']
+        if not q_preds:
+            continue
             
-            # Преобразуем из процентного изменения в абсолютное значение цены
-            price = prices[idx]
-            medians.append(price * (1 + q_preds[0.5]))
-            lower_bounds_90.append(price * (1 + q_preds[0.1]))
-            upper_bounds_90.append(price * (1 + q_preds[0.9]))
-            lower_bounds_extreme.append(price * (1 + q_preds[0.05]))
-            upper_bounds_extreme.append(price * (1 + q_preds[0.95]))
+        idx = r['index']
+        indices.append(idx)
+        
+        # Преобразуем из процентного изменения в абсолютное значение цены
+        price = prices[idx]
+        medians.append(price * (1 + q_preds[median_q]))
+        lower_bounds_90.append(price * (1 + q_preds[lower_q]))
+        upper_bounds_90.append(price * (1 + q_preds[upper_q]))
+        
+        # Добавляем крайние квантили, если они доступны
+        if has_extreme_quantiles:
+            if extreme_lower_q is not None:
+                lower_bounds_extreme.append(price * (1 + q_preds[extreme_lower_q]))
+            if extreme_upper_q is not None:
+                upper_bounds_extreme.append(price * (1 + q_preds[extreme_upper_q]))
 
-        # Отображаем медианные предсказания
-        plt.scatter(indices, medians, color='green', s=30, alpha=0.7, label='Медианное предсказание')
+    # Отображаем медианные предсказания
+    plt.scatter(indices, medians, color='green', s=30, alpha=0.7, label='Медианное предсказание')
 
-        # Отображаем интервалы предсказаний [10%, 90%]
-        for i in range(len(indices)):
-            plt.plot([indices[i], indices[i]], [lower_bounds_90[i], upper_bounds_90[i]], 
-                    color='green', alpha=0.3)
+    # Отображаем интервалы предсказаний [10%, 90%]
+    for i in range(len(indices)):
+        plt.plot([indices[i], indices[i]], [lower_bounds_90[i], upper_bounds_90[i]], 
+                color='green', alpha=0.3)
 
-        # Отображаем интервалы предсказаний [5%, 95%]
+    # Отображаем интервалы предсказаний для крайних квантилей, если доступны
+    if has_extreme_quantiles and extreme_lower_q is not None and extreme_upper_q is not None:
         for i in range(len(indices)):
             plt.plot([indices[i], indices[i]], [lower_bounds_extreme[i], upper_bounds_extreme[i]], 
                     color='blue', alpha=0.2, linestyle='--')
-            
-        plt.title('Предсказания с квантильными интервалами')
-        plt.xlabel('Индекс')
-        plt.ylabel('Цена')
-        plt.grid(alpha=0.3)
-        plt.legend()
         
-        # Сохраняем график, если указан путь
-        if save_path:
-            quantile_path = save_path.replace('.png', '_quantiles.png')
-            plt.savefig(quantile_path)
-        
-        plt.show()
+    plt.title('Предсказания с квантильными интервалами')
+    plt.xlabel('Индекс')
+    plt.ylabel('Цена')
+    plt.grid(alpha=0.3)
+    plt.legend()
     
-    def generate_report(self, results, save_path=None, prices=None):
-        """
-        Генерирует отчет о результатах предсказаний, включая информацию от квантильной регрессии
-        
-        Параметры:
-        results (list): результаты предсказаний
-        save_path (str): путь для сохранения отчета
-        prices (numpy.array, optional): массив цен, используемый для анализа фактических изменений
-        
-        Возвращает:
-        str: текст отчета
-        """
-        # Получаем базовый отчет от родительского класса
-        base_report = super().generate_report(results, None)
-        
-        # Собираем статистику по квантильным предсказаниям
-        quantile_results = [r for r in results if 'quantile_predictions' in r]
-        
-        if not quantile_results or prices is None:
-            # Если нет данных от квантильной регрессии или не передан массив цен
-            if save_path:
-                with open(save_path, 'w', encoding='utf-8') as f:
-                    f.write(base_report)
-            return base_report
+    # Сохраняем график, если указан путь
+    if save_path:
+        quantile_path = save_path.replace('.png', '_quantiles.png')
+        plt.savefig(quantile_path)
     
-        # Анализируем результаты квантильных предсказаний
-        
-        # 1. Точность квантильных предсказаний
-        # Считаем сколько раз фактическое значение попало в разные интервалы
-        actual_in_interval_90 = 0  # [10%, 90%]
-        actual_in_interval_mid = 0  # [25%, 75%]
-        actual_in_interval_extreme = 0  # [5%, 95%]
+    plt.show()
 
-        for r in quantile_results:
-            idx = r['index']
-            if idx + self.config.prediction_depth >= len(prices):
-                continue
-                    
-            # Фактическое изменение
-            actual_change = prices[idx + self.config.prediction_depth] / prices[idx] - 1
-            
-            # Предсказанные квантили
-            q05 = r['quantile_predictions'][0.05]
-            q10 = r['quantile_predictions'][0.1]
-            q25 = r['quantile_predictions'][0.25]
-            q75 = r['quantile_predictions'][0.75]
-            q90 = r['quantile_predictions'][0.9]
-            q95 = r['quantile_predictions'][0.95]
-            
-            # Проверяем, попало ли фактическое изменение в разные интервалы
-            if q10 <= actual_change <= q90:
-                actual_in_interval_90 += 1
-            if q25 <= actual_change <= q75:
-                actual_in_interval_mid += 1
-            if q05 <= actual_change <= q95:
-                actual_in_interval_extreme += 1
 
-        # Вычисляем процент попаданий в разные интервалы
-        interval_coverage_90 = actual_in_interval_90 / len(quantile_results) * 100 if quantile_results else 0
-        interval_coverage_mid = actual_in_interval_mid / len(quantile_results) * 100 if quantile_results else 0
-        interval_coverage_extreme = actual_in_interval_extreme / len(quantile_results) * 100 if quantile_results else 0
+# Исправление для метода generate_report в классе MarkovQuantilePredictor
 
-#         # 2. Средние предсказанные изменения для разных квантилей
-#         mean_q10 = np.mean([r['quantile_predictions'][0.1] * 100 for r in quantile_results])
-#         mean_q50 = np.mean([r['quantile_predictions'][0.5] * 100 for r in quantile_results])
-#         mean_q90 = np.mean([r['quantile_predictions'][0.9] * 100 for r in quantile_results])
-        
-#         # 3. Ширина предсказанных интервалов
-#         mean_interval_width = np.mean([(r['quantile_predictions'][0.9] - r['quantile_predictions'][0.1]) * 100 
-#                                        for r in quantile_results])
-        
-#         # Формируем дополнительный отчет
-#         quantile_report = f"""
-# ## Статистика квантильной регрессии
-
-# ### Общая информация
-# - Количество предсказаний с квантильной регрессией: {len(quantile_results)}
-# - Процент попаданий фактического значения в интервал [10%, 90%]: {interval_coverage:.2f}%
-
-# ### Средние предсказанные изменения
-# - Средний нижний квантиль (10%): {mean_q10:.2f}%
-# - Средний медианный квантиль (50%): {mean_q50:.2f}%
-# - Средний верхний квантиль (90%): {mean_q90:.2f}%
-# - Средняя ширина интервала [10%, 90%]: {mean_interval_width:.2f}%
-
-# ### Квантильные модели
-# - Количество обученных моделей (по состояниям): {len(self.quantile_models)}
-# """
-
-        # 2. Средние предсказанные изменения для разных квантилей
-        mean_q05 = np.mean([r['quantile_predictions'][0.05] * 100 for r in quantile_results])
-        mean_q10 = np.mean([r['quantile_predictions'][0.1] * 100 for r in quantile_results])
-        mean_q25 = np.mean([r['quantile_predictions'][0.25] * 100 for r in quantile_results])
-        mean_q50 = np.mean([r['quantile_predictions'][0.5] * 100 for r in quantile_results])
-        mean_q75 = np.mean([r['quantile_predictions'][0.75] * 100 for r in quantile_results])
-        mean_q90 = np.mean([r['quantile_predictions'][0.9] * 100 for r in quantile_results])
-        mean_q95 = np.mean([r['quantile_predictions'][0.95] * 100 for r in quantile_results])
-
-        # 3. Ширина предсказанных интервалов
-        mean_interval_width_90 = np.mean([(r['quantile_predictions'][0.9] - r['quantile_predictions'][0.1]) * 100 
-                                        for r in quantile_results])
-        mean_interval_width_50 = np.mean([(r['quantile_predictions'][0.75] - r['quantile_predictions'][0.25]) * 100 
-                                        for r in quantile_results])
-        mean_interval_width_90_extreme = np.mean([(r['quantile_predictions'][0.95] - r['quantile_predictions'][0.05]) * 100 
-                                            for r in quantile_results])
-
-        # Формируем дополнительный отчет
-        quantile_report = f"""
-    ## Статистика квантильной регрессии
-
-    ### Общая информация
-    - Количество предсказаний с квантильной регрессией: {len(quantile_results)}
-    - Процент попаданий фактического значения в интервал [10%, 90%]: {interval_coverage_90:.2f}%
-    - Процент попаданий фактического значения в интервал [5%, 95%]: {interval_coverage_extreme:.2f}%
-    - Процент попаданий фактического значения в интервал [25%, 75%]: {interval_coverage_mid:.2f}%
-
-    ### Средние предсказанные изменения
-    - Средний квантиль 5%: {mean_q05:.2f}%
-    - Средний квантиль 10%: {mean_q10:.2f}%
-    - Средний квантиль 25%: {mean_q25:.2f}%
-    - Средний медианный квантиль (50%): {mean_q50:.2f}%
-    - Средний квантиль 75%: {mean_q75:.2f}%
-    - Средний квантиль 90%: {mean_q90:.2f}%
-    - Средний квантиль 95%: {mean_q95:.2f}%
-
-    ### Ширина предсказанных интервалов
-    - Средняя ширина интервала [10%, 90%]: {mean_interval_width_90:.2f}%
-    - Средняя ширина интервала [25%, 75%]: {mean_interval_width_50:.2f}%
-    - Средняя ширина интервала [5%, 95%]: {mean_interval_width_90_extreme:.2f}%
-
-    ### Квантильные модели
-    - Количество обученных моделей (по состояниям): {len(self.quantile_models)}
+def generate_report(self, results, save_path=None, prices=None):
     """
+    Генерирует отчет о результатах предсказаний, включая информацию от квантильной регрессии
+    с безопасной обработкой различных наборов квантилей
+    
+    Параметры:
+    results (list): результаты предсказаний
+    save_path (str): путь для сохранения отчета
+    prices (numpy.array, optional): массив цен, используемый для анализа фактических изменений
+    
+    Возвращает:
+    str: текст отчета
+    """
+    # Получаем базовый отчет от родительского класса
+    # base_report = super().generate_report(results, None)
+    base_report = super().generate_report(results, None, prices)
 
-        
-        # Объединяем отчеты
-        full_report = base_report + quantile_report
-        
-        # Сохраняем отчет, если указан путь
+    
+    # Собираем статистику по квантильным предсказаниям
+    quantile_results = [r for r in results if 'quantile_predictions' in r and r['quantile_predictions']]
+    
+    if not quantile_results or prices is None:
+        # Если нет данных от квантильной регрессии или не передан массив цен
         if save_path:
             with open(save_path, 'w', encoding='utf-8') as f:
-                f.write(full_report)
-        
-        return full_report
+                f.write(base_report)
+        return base_report
     
+    # Определим доступные квантили из первого результата с непустыми предсказаниями
+    first_result = next((r for r in quantile_results if r['quantile_predictions']), None)
+    if not first_result:
+        if save_path:
+            with open(save_path, 'w', encoding='utf-8') as f:
+                f.write(base_report)
+        return base_report
+        
+    available_quantiles = sorted(first_result['quantile_predictions'].keys())
+    if not available_quantiles:
+        if save_path:
+            with open(save_path, 'w', encoding='utf-8') as f:
+                f.write(base_report)
+        return base_report
+    
+    # Находим ближайшие доступные квантили к стандартным значениям
+    lower_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.1))
+    upper_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.9))
+    mid_lower_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.25))
+    mid_upper_q = min(available_quantiles, key=lambda q: abs(float(q) - 0.75))
+    
+    # Если доступно больше 4 квантилей, используем крайние для [5%, 95%]
+    extreme_lower_q = None
+    extreme_upper_q = None
+    
+    if len(available_quantiles) >= 4:
+        # Для крайних значений используем минимальный и максимальный доступные квантили
+        extreme_lower_q = min(available_quantiles)
+        extreme_upper_q = max(available_quantiles)
+        
+        # Если они совпадают с основными, то не используем их отдельно
+        if extreme_lower_q == lower_q:
+            extreme_lower_q = None
+        if extreme_upper_q == upper_q:
+            extreme_upper_q = None
+    
+    # Анализируем результаты квантильных предсказаний
+    
+    # 1. Точность квантильных предсказаний
+    # Считаем сколько раз фактическое значение попало в разные интервалы
+    actual_in_interval_90 = 0  # [10%, 90%]
+    actual_in_interval_mid = 0  # [25%, 75%]
+    actual_in_interval_extreme = 0  # [5%, 95%] или крайние доступные
+
+    for r in quantile_results:
+        idx = r['index']
+        if idx + self.config.prediction_depth >= len(prices):
+            continue
+                
+        # Фактическое изменение
+        actual_change = prices[idx + self.config.prediction_depth] / prices[idx] - 1
+        
+        # Предсказанные квантили
+        q_preds = r['quantile_predictions']
+        
+        # Проверяем, попало ли фактическое изменение в разные интервалы
+        if q_preds[lower_q] <= actual_change <= q_preds[upper_q]:
+            actual_in_interval_90 += 1
+        if q_preds[mid_lower_q] <= actual_change <= q_preds[mid_upper_q]:
+            actual_in_interval_mid += 1
+        # Если есть крайние квантили
+        if extreme_lower_q is not None and extreme_upper_q is not None:
+            if q_preds[extreme_lower_q] <= actual_change <= q_preds[extreme_upper_q]:
+                actual_in_interval_extreme += 1
+
+    # Вычисляем процент попаданий в разные интервалы
+    valid_results_count = len([r for r in quantile_results if 
+                           r['index'] + self.config.prediction_depth < len(prices)])
+    
+    interval_coverage_90 = (actual_in_interval_90 / valid_results_count * 100 
+                         if valid_results_count > 0 else 0)
+    interval_coverage_mid = (actual_in_interval_mid / valid_results_count * 100 
+                          if valid_results_count > 0 else 0)
+    
+    if extreme_lower_q is not None and extreme_upper_q is not None:
+        interval_coverage_extreme = (actual_in_interval_extreme / valid_results_count * 100 
+                                  if valid_results_count > 0 else 0)
+    else:
+        interval_coverage_extreme = None
+
+    # 2. Средние предсказанные изменения для разных квантилей
+    mean_quantiles = {}
+    for q in available_quantiles:
+        mean_quantiles[q] = np.mean([r['quantile_predictions'][q] * 100 for r in quantile_results])
+    
+    # 3. Ширина предсказанных интервалов
+    mean_interval_width_90 = np.mean([(r['quantile_predictions'][upper_q] - 
+                                    r['quantile_predictions'][lower_q]) * 100 
+                                   for r in quantile_results])
+    mean_interval_width_50 = np.mean([(r['quantile_predictions'][mid_upper_q] - 
+                                    r['quantile_predictions'][mid_lower_q]) * 100 
+                                   for r in quantile_results])
+    
+    if extreme_lower_q is not None and extreme_upper_q is not None:
+        mean_interval_width_extreme = np.mean([(r['quantile_predictions'][extreme_upper_q] - 
+                                            r['quantile_predictions'][extreme_lower_q]) * 100 
+                                           for r in quantile_results])
+    else:
+        mean_interval_width_extreme = None
+
+    # Формируем дополнительный отчет
+    quantile_report = f"""
+## Статистика квантильной регрессии
+
+### Общая информация
+- Количество предсказаний с квантильной регрессией: {len(quantile_results)}
+- Доступные квантили: {', '.join([f"{q:.2f}" for q in available_quantiles])}
+- Процент попаданий фактического значения в интервал [{lower_q:.2f}, {upper_q:.2f}]: {interval_coverage_90:.2f}%
+- Процент попаданий фактического значения в интервал [{mid_lower_q:.2f}, {mid_upper_q:.2f}]: {interval_coverage_mid:.2f}%
+"""
+
+    # Добавляем информацию о крайних квантилях, если они доступны
+    if extreme_lower_q is not None and extreme_upper_q is not None:
+        quantile_report += f"- Процент попаданий фактического значения в интервал [{extreme_lower_q:.2f}, {extreme_upper_q:.2f}]: {interval_coverage_extreme:.2f}%\n"
+
+    quantile_report += "\n### Средние предсказанные изменения\n"
+    
+    # Добавляем средние значения по всем доступным квантилям
+    for q in sorted(available_quantiles):
+        quantile_report += f"- Средний квантиль {q:.2f}: {mean_quantiles[q]:.2f}%\n"
+
+    quantile_report += "\n### Ширина предсказанных интервалов\n"
+    quantile_report += f"- Средняя ширина интервала [{lower_q:.2f}, {upper_q:.2f}]: {mean_interval_width_90:.2f}%\n"
+    quantile_report += f"- Средняя ширина интервала [{mid_lower_q:.2f}, {mid_upper_q:.2f}]: {mean_interval_width_50:.2f}%\n"
+    
+    # Добавляем информацию о ширине крайнего интервала, если доступен
+    if extreme_lower_q is not None and extreme_upper_q is not None and mean_interval_width_extreme is not None:
+        quantile_report += f"- Средняя ширина интервала [{extreme_lower_q:.2f}, {extreme_upper_q:.2f}]: {mean_interval_width_extreme:.2f}%\n"
+
+    quantile_report += f"""
+### Квантильные модели
+- Количество обученных моделей (по состояниям): {len(self.quantile_models)}
+"""
+    
+    # Объединяем отчеты
+    full_report = base_report + quantile_report
+    
+    # Сохраняем отчет, если указан путь
+    if save_path:
+        with open(save_path, 'w', encoding='utf-8') as f:
+            f.write(full_report)
+    
+    return full_report
+
+
+############### --------- EnhancedHybridPredictor(MarkovQuantilePredictor) ------- ###############
+
 class EnhancedHybridPredictor(MarkovQuantilePredictor):
     """
     Улучшенный гибридный предиктор, использующий характеристики состояний
