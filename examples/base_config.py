@@ -150,10 +150,9 @@ def create_baseline_57_81_config():
         
         # Параметры предсказаний
         min_confidence=0.6,
-        confidence_threshold=0.5,
+        confidence_threshold=0.005,  # Изменено с 0.5 на 0.005
         max_coverage=0.05
     )
-
 
 def verify_baseline_performance(data_file=None, max_data_points=9000, verbose=True):
     """

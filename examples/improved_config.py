@@ -206,8 +206,8 @@ def main():
         # Получаем параметры от пользователя
         window_size = int(input("window_size (750): ") or "750")
         prediction_depth = int(input("prediction_depth (15): ") or "15")
-        significant_change_pct = float(input("significant_change_pct (0.4): ") or "0.4")
-        confidence_threshold = float(input("confidence_threshold (0.5): ") or "0.5")
+        significant_change_pct = float(input("significant_change_pct (0.004): ") or "0.004")
+        confidence_threshold = float(input("confidence_threshold (0.005): ") or "0.005")
         max_coverage = float(input("max_coverage (0.05): ") or "0.05")
         
         config = create_custom_config(

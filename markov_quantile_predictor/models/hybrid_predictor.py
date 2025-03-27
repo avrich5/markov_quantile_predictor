@@ -137,8 +137,6 @@ class MarkovQuantilePredictor(MarkovPredictor):
         
         return np.array(X), np.array(y), current_features
         
-# Исправление для метода visualize_results в классе MarkovQuantilePredictor
-
 def visualize_results(self, prices, results, save_path=None):
     """
     Визуализирует результаты предсказаний, включая информацию от квантильной регрессии
@@ -256,9 +254,6 @@ def visualize_results(self, prices, results, save_path=None):
         plt.savefig(quantile_path)
     
     plt.show()
-
-
-# Исправление для метода generate_report в классе MarkovQuantilePredictor
 
 def generate_report(self, results, save_path=None, prices=None):
     """
@@ -646,6 +641,12 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
         if idx % 1000 == 0:
             print(f"  Decision: prediction={prediction}, confidence={confidence:.4f}, threshold={self.config.confidence_threshold}")
         
+        # Отладочная информация о решении
+        if idx % 1000 == 0:
+            print(f"  Decision: prediction={prediction}, confidence={confidence:.4f}, threshold={self.config.confidence_threshold}")
+            # Добавьте эту строку для отладки
+            print(f"  Debug config values: confidence_threshold={self.config.confidence_threshold}, max_coverage={self.config.max_coverage}")
+
         # Применяем фильтр уверенности
         if confidence < self.config.confidence_threshold:
             prediction = 0
@@ -775,11 +776,6 @@ class EnhancedHybridPredictor(MarkovQuantilePredictor):
             
             return results
        
-    """
-Функция _update_quantile_models в классе EnhancedHybridPredictor
-Обновляем формирование отчета для работы с уменьшенным набором квантилей
-"""
-
     def _update_quantile_models(self, prices, results):
         # Группируем результаты по состояниям
         state_data = defaultdict(lambda: {'X': [], 'y': []})
